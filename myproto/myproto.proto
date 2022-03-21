@@ -1,0 +1,17 @@
+syntax = "proto3";  //语法声明
+
+option go_package = "./;myproto"; // 第一个是路径，第二个是包名
+// MyEcho 微服务
+service MyEcho {
+  rpc Foo(MyGrpcRequest) returns (MyGrpcReply) {}
+}
+
+// MyGrpcRequest 请求数据格式
+message MyGrpcRequest {
+  string name = 1;
+}
+
+// MyGrpcReply 响应数据格式
+message MyGrpcReply {
+  string message = 1;
+}
