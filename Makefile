@@ -1,17 +1,13 @@
 SHELL := /bin/bash -o pipefail
 gen-proto:
-	pushd myproto && \
-	protoc --go_out=. --go-grpc_out=. *.proto ; \
-	popd
+	protoc -I ./myproto \
+   --go_out ./myproto --go_opt paths=source_relative \
+   --go-grpc_out ./myproto --go-grpc_opt paths=source_relative \
+   ./myproto/*.proto
 
 run-server: gen-proto
 	@go mod tidy
 	go run server.go
 
-run-client: gen-proto
-	@go mod tidy
-	go run client.go
-
-
-.PHONY: gen-proto run-server run-client 
+.PHONY: gen-proto run-server
 

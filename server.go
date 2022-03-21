@@ -4,10 +4,11 @@ import (
 	"context"
 	"log"
 	"net"
-
+    "net/http"
+    "google.golang.org/grpc/credentials/insecure"
+    "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
     pb "myproto"
-	"google.golang.org/grpc/reflection"
 )
 
 const (
@@ -31,10 +32,35 @@ func main() {
 	}
 	s := grpc.NewServer() //起GRPC服务
 	pb.RegisterMyEchoServer(s, &server{})
-	// 注册反射服务 这个服务是CLI使用的 跟服务本身没有关系
-	reflection.Register(s)
     log.Println("starting grpc server on port ", port)
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+    //////////// GRPC Server用go routine来运行//////////////
+    go func() {
+		log.Fatalln(s.Serve(lis))
+	}()
+    //这里有一个grpc的客户端，来连接刚才go routine启动的grpc服务端
+	// Create a client connection to the gRPC server we just started
+	// This is where the gRPC-Gateway proxies the requests
+	conn, err := grpc.DialContext(
+		context.Background(),
+		"0.0.0.0" + port,
+		grpc.WithBlock(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+        log.Fatalln("Failed to dial server:", err)
 	}
+    // 启动一个HTTP服务
+	gwmux := runtime.NewServeMux()
+	// Register PB服务
+	err = pb.RegisterMyEchoHandler(context.Background(), gwmux, conn)
+	if err != nil {
+		log.Fatalln("Failed to register gateway:", err)
+	}
+	gwServer := &http.Server{
+		Addr:    ":8090",
+		Handler: gwmux,
+	}
+
+	log.Println("Serving gRPC-Gateway on http://0.0.0.0:8090")
+	log.Fatalln(gwServer.ListenAndServe())
 }

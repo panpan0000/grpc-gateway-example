@@ -1,9 +1,18 @@
 syntax = "proto3";  //语法声明
 
+import "google/api/annotations.proto"; // annotation for GRPC Gateway
+
+//reference : https://github.com/grpc-ecosystem/grpc-gateway
+
 option go_package = "./;myproto"; // 第一个是路径，第二个是包名
 // MyEcho 微服务
 service MyEcho {
-  rpc Foo(MyGrpcRequest) returns (MyGrpcReply) {}
+    rpc Foo(MyGrpcRequest) returns (MyGrpcReply) {
+        option (google.api.http) = { // What's New: define the HTTP->GRPC mapping
+            post: "/v1/example/echo"
+            body: "*"
+        };
+    }
 }
 
 // MyGrpcRequest 请求数据格式
